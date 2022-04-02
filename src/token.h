@@ -3,8 +3,11 @@
 #pragma once
 
 #include <string>
+#include <cstdint>
+#include <set>
+#include <vector>
 
-enum class TokenType {
+enum class TokenType: uint8_t {
     // Keyword
     TOKEN_BREAK,
     TOKEN_CASE,
@@ -87,6 +90,7 @@ enum class TokenType {
     TOKEN_LOGICAL_OR,           // ||
     TOKEN_CONDITIONAL,          // ?
     TOKEN_COLON,                // :
+
     TOKEN_EQUAL,                // =
     TOKEN_PLUS_EQUAL,           // +=
     TOKEN_MINUS_EQUAL,          // -=
@@ -98,8 +102,9 @@ enum class TokenType {
     TOKEN_BITWISE_AND_EQUAL,    // &=
     TOKEN_BITWISE_OR_EQUAL,     // |=
     TOKEN_BITWISE_XOR_EQUAL,    // ^=
-    TOKEN_DIV,                  // /
     TOKEN_DIV_EQUAL,            // /=
+    
+    TOKEN_DIV,                  // /
 
     TOKEN_NULL,
 
@@ -114,9 +119,6 @@ enum class TokenType {
     TOKEN_EOF,
 };
 
-enum class FutureReservedWord {
-};
-
 class Token {
 public:
     Token(
@@ -124,12 +126,38 @@ public:
         const int& l, const char* s, 
         const TokenType t);
 
-    TokenType getTokenType() const { return type; } 
+    TokenType getTokenType() const { return type; }
+    const char* getStart() const { return start; }
+    int getLength() const { return length; }
+    std::string getString() { return std::string(start, length); }
+    int getRow() const { return row; }
+    int getCol() const { return col; }
+    std::string enumToString() const { return enumString[static_cast<int>(type)]; } 
 private:
     int col;
     int row;
     int length;
     const char* start;
     TokenType type;
+    static const std::vector<std::string> enumString;
 };
+namespace std {
+    template<>
+    struct less<Token> {
+        bool operator()(const Token& t1,
+                        const Token& t2) const {
+            if (t1.getRow() < t2.getRow())
+                return true;
+            else if (t1.getRow() == t2.getRow()) {
+                if (t1.getCol() < t2.getCol())
+                    return true;
+                return false;
+            } else {
+                return false;
+            }
+        }
+    };
+}
+using TokenSet = std::set<Token>;
+using TokenVec = std::vector<Token>;
 #endif

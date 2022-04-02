@@ -196,10 +196,10 @@ TokenType Scanner::identifierType() {
                             }
                         }
                     case 'o':
-                        if (cur - start > 3) {
+                        if (cur - start > 3 && start[2] == 'n') {
                             switch (start[3]) {
-                                case 's': return checkKeyword(4, 4, "inue", TokenType::TOKEN_CONTINUE);
-                                case 't': return checkKeyword(4, 1, "t", TokenType::TOKEN_CONST);
+                                case 't': return checkKeyword(4, 4, "inue", TokenType::TOKEN_CONTINUE);
+                                case 's': return checkKeyword(4, 1, "t", TokenType::TOKEN_CONST);
                             }
                         }
                     case 'l': return checkKeyword(2, 3, "ass", TokenType::TOKEN_CLASS);
