@@ -1,15 +1,16 @@
-#ifndef _AST_DUMP_H
-#define _AST_DUMP_H
+#ifndef _CODE_GEN_H
+#define _CODE_GEN_H
 #pragma once
 
-#include <string>
-#include "ast.h"
+#include "symtab.h"
+#include "value.h"
+#include <vector>
 #include "ast_visitor.h"
+#include "vm_function.h"
 
-class ASTDump: public ASTVisitor {
+class CodeGen: public ASTVisitor {
 public:
-    ASTDump(): deep(0) {}
-
+    CodeGen(): fun(new VMFunction), table(new Symtab) {}
     void visitASTProgram(const ASTProgram* node);
     virtual void visitVariableDeclaration(const ASTVariableDeclaration* node);
     virtual void visitVariableDeclarator(const ASTVariableDeclarator* node);
@@ -32,16 +33,12 @@ public:
     virtual void visitDoWhileStmt(const DoWhileStmt* node);
     virtual void visitUnaryExpr(const UnaryExpr* node);
     virtual void visitArrayExpr(const ArrayExpr* node);
-private:
-    void printTab() const;
-    void printLeftBrace();
-    void printRightBrace();
-    void printLeftBracket();
-    void printRightBracket();
-    void printType(const std::string& type);
 
-    void visit(Expr* e);
+    void dumpCallFrames(const VMFunction* fun) const;
+    VMFunction* getFunction() const { return fun; }
+    Symtab* getSymtab() const { return table; }
 private:
-    int deep;
+    VMFunction* fun;
+    Symtab* table; 
 };
 #endif

@@ -11,6 +11,7 @@ public:
     virtual ASTType getType() const { 
         return ASTType::AST_STMT_BLOCK; 
     }
+    virtual void accept(ASTVisitor* visitor);
     void push_back(Expr* e) { body.emplace_back(e); }
     ExprPtrVec getBody() const { return body; }
 private:
@@ -23,6 +24,7 @@ public:
     virtual ASTType getType() const { 
         return ASTType::AST_STMT_RETURN; 
     }
+    virtual void accept(ASTVisitor* visitor);
     void setExpr(Expr* e) { argument = e; }
     Expr* getArgument() const { return argument; }
 private:
@@ -40,6 +42,7 @@ public:
     virtual ASTType getType() const { 
         return ASTType::AST_STMT_IF; 
     }
+    virtual void accept(ASTVisitor* visitor);
 private:
     Expr* test;
     Expr* consequent;
@@ -54,6 +57,7 @@ public:
     virtual ASTType getType() const { 
         return ASTType::AST_STMT_LABEL; 
     }
+    virtual void accept(ASTVisitor* visitor);
 private:
     Expr* label;
     Expr* body;
@@ -65,6 +69,7 @@ public:
     virtual ASTType getType() const { 
         return ASTType::AST_STMT_CONTINUE; 
     }
+    virtual void accept(ASTVisitor* visitor);
     Identifier* getLabel() const { return label; }
 private:
     Identifier* label;
@@ -76,6 +81,7 @@ public:
     virtual ASTType getType() const { 
         return ASTType::AST_STMT_BREAK; 
     }
+    virtual void accept(ASTVisitor* visitor);
     Identifier* getLabel() const { return label; }
 private:
     Identifier* label;
@@ -92,6 +98,7 @@ public:
     virtual ASTType getType() const { 
         return ASTType::AST_STMT_FOR; 
     }
+    virtual void accept(ASTVisitor* visitor);
 private:
     Expr *init, *test, *update;
     Expr *body;
@@ -107,6 +114,7 @@ public:
     virtual ASTType getType() const { 
         return ASTType::AST_STMT_FORIN; 
     }
+    virtual void accept(ASTVisitor* visitor);
 private:
     Expr *LHS, *RHS;
     Expr *body;
@@ -118,6 +126,7 @@ public:
     virtual ASTType getType() const { 
         return ASTType::AST_STMT_DOWHILE; 
     }
+    virtual void accept(ASTVisitor* visitor);
     Expr* getTest() const { return test; }
     Expr* getBody() const { return body; }
 private:
@@ -131,6 +140,7 @@ public:
     virtual ASTType getType() const { 
         return ASTType::AST_STMT_WHILE; 
     }
+    virtual void accept(ASTVisitor* visitor);
     Expr* getTest() const { return test; }
     Expr* getBody() const { return body; }
 private:

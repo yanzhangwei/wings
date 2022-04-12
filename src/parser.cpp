@@ -293,7 +293,7 @@ Expr* Parser::parseNewExpression() {
     return parseMemberExpression();
 }
 
-Expr* Parser::parseCallExpression(MemberExpr* e) {
+Expr* Parser::parseCallExpression(Expr* e) {
     CallExpr* call = new CallExpr;
     call->setCallee(e);
     call->setArgs(parseArguments());
@@ -345,7 +345,7 @@ ExprPtrVec Parser::parseArgumentList() {
 Expr* Parser::parseLeftHandSideExpression() {
     Expr* e = parseNewExpression();
     if (match(TokenType::TOKEN_LEFT_PAREN, false)) {
-        return parseCallExpression(dynamic_cast<MemberExpr*>(e));
+        return parseCallExpression(e);
     } 
     return e;
 }

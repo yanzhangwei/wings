@@ -2,13 +2,34 @@
 #define _AST_VISITOR_H
 #pragma once
 
-#include "ast_expr.h"
-#include "ast_decl.h"
-#include "ast_stmt.h"
+// #include "ast_expr.h"
+// #include "ast_decl.h"
+// #include "ast_stmt.h"
+class ASTVariableDeclaration;
+class ASTVariableDeclarator;
+class Identifier;
+class MemberExpr;
+class Literal;
+class CallExpr;
+class BinaryExpr;
+class ASTFunctionDeclaration;
+class BlockStmt;
+class ReturnStmt;
+class IfStmt;
+class AssignmentExpr;
+class LabelStmt;
+class ContinueStmt;
+class BreakStmt;
+class ForStmt;
+class ForInStmt;
+class DoWhileStmt;
+class WhileStmt;
+class UnaryExpr;
+class ArrayExpr;
 
 class ASTVisitor {
 public:
-    virtual void visitASTProgram(const ASTProgram* node) = 0;
+    // virtual void visitASTProgram(const ASTProgram* node) = 0;
     virtual void visitVariableDeclaration(const ASTVariableDeclaration* node) = 0;
     virtual void visitVariableDeclarator(const ASTVariableDeclarator* node) = 0;
     virtual void visitIdentifier(const Identifier* node) = 0;

@@ -25,7 +25,7 @@ Scanner::Scanner(const std::string& path)
 }
 
 Scanner::~Scanner() {
-    delete start;
+    // delete start;
 }
 
 Token Scanner::scanToken() {

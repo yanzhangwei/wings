@@ -15,6 +15,7 @@ public:
     virtual ASTType getType() const { 
         return ASTType::AST_EXPR_LITERAL; 
     }
+    virtual void accept(ASTVisitor* visitor);
     void print() const {
         if (std::holds_alternative<double>(value)) {
             std::cout << std::get<double>(value);
@@ -26,9 +27,12 @@ public:
             std::cout << "undefined";
         }
     }
-
+    // bool isNumber() const { return std::holds_alternative<double>(value); }
+    // double getNumber() const { return std::get<double>(value); }
+    // std::string getString() const { return std::get<std::string>(value); } 
+    Value getValue() const { return value; }
 private:
-    std::variant<double, bool, std::string, std::monostate> value;
+    Value value;
 };
 
 // class LiteralNull: public Literal {

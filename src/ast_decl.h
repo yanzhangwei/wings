@@ -20,6 +20,7 @@ public:
     virtual ASTType getType() const { 
         return ASTType::AST_VARIABLEDECLARATION; 
     }
+    virtual void accept(ASTVisitor* visitor);
 private:
     Token kind;
     ExprPtrVec declarations;
@@ -38,6 +39,7 @@ public:
     virtual ASTType getType() const { 
         return ASTType::AST_VARIABLEDECLARATOR; 
     }
+    virtual void accept(ASTVisitor* visitor);
 private:
     Expr*    init;
     Identifier* id;
@@ -54,6 +56,7 @@ public:
     virtual ASTType getType() const { 
         return ASTType::AST_FUNCTIONDECLARATION; 
     }
+    virtual void accept(ASTVisitor* visitor);
 private:
     Identifier* id;
     std::vector<Identifier*> params;

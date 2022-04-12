@@ -6,10 +6,11 @@
 #include "token.h"
 #include <vector>
 #include <string>
-
+#include "ast_visitor.h"
 class Expr: public AST {
 public:
     virtual ASTType getType() const = 0;
+    virtual void accept(ASTVisitor* visitor) = 0;
 };
 using ExprPtrVec = std::vector<Expr*>;
 
@@ -19,6 +20,7 @@ public:
     virtual ASTType getType() const { 
         return ASTType::AST_EXPR_IDENTIFIER; 
     }
+    virtual void accept(ASTVisitor* visitor);
     std::string getName() const { return name; }
 private:
     std::string name;
@@ -31,6 +33,7 @@ public:
     virtual ASTType getType() const { 
         return ASTType::AST_EXPR_BINARY; 
     }
+    virtual void accept(ASTVisitor* visitor);
     Expr* getLHS() const { return LHS; }
     Expr* getRHS() const { return RHS; }
     std::string getOp() const { return op.enumToString(); }
@@ -44,7 +47,7 @@ public:
     virtual ASTType getType() const { 
         return ASTType::AST_EXPR_ARRAY; 
     }
-
+    virtual void accept(ASTVisitor* visitor);
     void push_back(Expr* e) { elements.emplace_back(e); }
 private:
     ExprPtrVec elements;
@@ -56,6 +59,7 @@ public:
     virtual ASTType getType() const { 
         return ASTType::AST_PROPERTY; 
     }
+    virtual void accept(ASTVisitor* visitor);
     void setKey(Expr* k) { key = k; }
     void setValue(Expr* v) { value = v; }
     Expr* getKey() const { return key; }
@@ -73,7 +77,7 @@ public:
     virtual ASTType getType() const { 
         return ASTType::AST_EXPR_OBJECT; 
     }
-
+    virtual void accept(ASTVisitor* visitor);
 private:
     ExprPtrVec properties;
 };
@@ -83,6 +87,7 @@ public:
     virtual ASTType getType() const { 
         return ASTType::AST_EXPR_CALL; 
     }
+    virtual void accept(ASTVisitor* visitor);
     void setCallee(Expr* c) { callee = c; }
     void setArgs(const ExprPtrVec& vec) {
         if (vec.size()) 
@@ -98,10 +103,10 @@ private:
 class MemberExpr: public Expr {
 public:
     MemberExpr(): object(nullptr), property(nullptr) {}
-    ~MemberExpr() {
-        delete object;
-        delete property;
-    }
+    // ~MemberExpr() {
+    //     delete object;
+    //     delete property;
+    // }
     void setObject(Expr* o) { object = o; }
     void setProperty(Expr* p) { property = p; }
     Expr* getObject() const { return object; }
@@ -109,6 +114,7 @@ public:
     virtual ASTType getType() const { 
         return ASTType::AST_EXPR_MEMBER; 
     }
+    virtual void accept(ASTVisitor* visitor);
 private:
     Expr* object;
     Expr* property;
@@ -119,6 +125,7 @@ public:
     virtual ASTType getType() const { 
         return ASTType::AST_EXPR_CONDITION; 
     }
+    virtual void accept(ASTVisitor* visitor);
 private:
 
 };
@@ -133,6 +140,7 @@ public:
     virtual ASTType getType() const { 
         return ASTType::AST_EXPR_ASSIGNMENT; 
     }
+    virtual void accept(ASTVisitor* visitor);
 private:
     Expr *LHS, *RHS;
     Token op;
@@ -145,6 +153,7 @@ public:
     virtual ASTType getType() const { 
         return ASTType::AST_EXPR_UNARY; 
     }
+    virtual void accept(ASTVisitor* visitor);
     bool getPrefix() const { return prefix; }
     std::string getOp() const { return op.enumToString(); }
     Expr* getArgument() const { return argument; }

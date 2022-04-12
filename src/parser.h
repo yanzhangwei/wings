@@ -50,7 +50,7 @@ private:
 
     Expr* parseMemberExpression();
     Expr* parseNewExpression();
-    Expr* parseCallExpression(MemberExpr* e);
+    Expr* parseCallExpression(Expr* e);
     ExprPtrVec parseArguments();
     ExprPtrVec parseArgumentList();
     Expr* parseLeftHandSideExpression();
