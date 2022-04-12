@@ -640,7 +640,7 @@ Expr* Parser::parseFunctionDeclaration() {
     }
     match(TokenType::TOKEN_LEFT_BRACE);
     fun->setBlock(parseFunctionBody());
-    match(TokenType::TOKEN_RIGHT_BRACE);
+    // match(TokenType::TOKEN_RIGHT_BRACE);
     return fun;
 }
 

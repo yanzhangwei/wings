@@ -2,6 +2,9 @@
 #define _VM_FUNCTION_H
 #pragma once
 
+#include "value.h"
+#include <string>
+#include <unordered_map>
 #include <cstdint>
 #include "chunk.h"
 #include "ast_expr.h"
@@ -18,12 +21,26 @@ public:
     Identifier* getName() const { return name; }
     VMFunction* getParent() const { return parent; }
     std::vector<Identifier*> getParams() const { return params; }
+    void insert(const std::string& str, Value *l) { hashmap.insert_or_assign(str, l); }
+    Value* lookup(const std::string& key) const {
+        auto tmp = hashmap;
+        auto prev = this;
+        while (prev) {
+            auto found = tmp.find(key);
+            if (found != hashmap.end())
+                return found->second;
+            prev = prev->parent;
+            if (!prev) return nullptr;
+            tmp = prev->hashmap;
+        }
+        return nullptr;
+    }
 private:
-    // int params;
     std::vector<Identifier*> params;
     Chunk* chunk;
     Identifier* name;
     VMFunction* parent;
+    std::unordered_map<std::string, Value*> hashmap;
 };
 
 struct CallFrame {

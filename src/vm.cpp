@@ -12,10 +12,12 @@
 
 
 VM::VM(const ASTProgram* ast): 
-    codegen(new CodeGen), table(new Symtab) {
+    codegen(new CodeGen)/*, table(new Symtab)*/ {
     codegen->visitASTProgram(ast);
     frames.emplace_back(new CallFrame(codegen->getFunction()));
+    // auto asd = codegen->getSymtab();
     
+    int a = 0;
 }
 
 VM::~VM() {
@@ -63,19 +65,30 @@ void VM::run() {
             }
             case OP_RETURN: {
                 Value* result = pop();
-                
+
                 while (peek(0) != frame->slots) {
                     pop();
                 }
                 pop();
-                stack.emplace_back(result);
+                if (std::holds_alternative<std::string>(result->getData())) {
+                    if (auto val = frame->fun->lookup(std::get<std::string>(result->getData()))) {
+                        stack.emplace_back(val);
+                    } else {
+                        stack.emplace_back(result);
+                    }
+                } else {
+                    stack.emplace_back(result);
+                }
                 frames.pop_back();
-                table->finalize();
+                // table->finalize();
                 frame = frames.back();
 
                 break;
             }
-            default: return;
+            default: 
+                // table->finalize();
+                auto z = frame->fun->lookup("z");
+                return;
         }
     }
 }
@@ -119,17 +132,17 @@ Value* VM::peek(const int& distance) const {
 void VM::setTable() {
     auto data = peek(0)->getData();
     if (auto value = std::get_if<std::string>(&data)) {
-        table->insert(std::get<std::string>(peek(0)->getData()), peek(1));
+        frames.back()->fun->insert(std::get<std::string>(peek(0)->getData()), peek(1));
         pop();
         pop();
     } else if (auto value = std::get_if<VMFunction*>(&data)) {
-        table->insert((*value)->getName()->getName(), new Value(*value));
+        frames.back()->fun->insert((*value)->getName()->getName(), new Value(*value));
         pop();
     }
 }
 
 void VM::getTable() {
-    Value* tmp = table->lookup(std::get<std::string>(peek(0)->getData()));
+    Value* tmp = frames.back()->fun->lookup(std::get<std::string>(peek(0)->getData()));
     pop();
     stack.emplace_back(tmp);
 }
@@ -138,10 +151,14 @@ void VM::call(Value* val, const int& args) {
     if (!std::holds_alternative<VMFunction*>(val->getData()))
         return;
     VMFunction* fun = std::get<VMFunction*>(val->getData());
-    table->initialize();
+    // if (fun->getName()->getName() == "inner") {
+    //     auto asd = fun->lookup("y");
+    // }
+
+    // table->initialize();
 
     for (int i = 0; i < fun->getParams().size(); ++i) {
-        table->insert(fun->getParams()[i]->getName(), peek(args - i - 1));
+        fun->insert(fun->getParams()[i]->getName(), peek(args - i - 1));
     }
 
     CallFrame* frame = new CallFrame(fun);

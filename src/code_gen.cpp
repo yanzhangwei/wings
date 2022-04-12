@@ -21,10 +21,11 @@ void CodeGen::visitVariableDeclaration(const ASTVariableDeclaration *node) {
 }
 
 void CodeGen::visitVariableDeclarator(const ASTVariableDeclarator *node) {
-    table->insert(node->getId()->getName(), nullptr);
+    // table->insert(node->getId()->getName(), nullptr);
     node->getInit()->accept(this);
     node->getId()->accept(this);
     fun->getChunk()->pushCode(OP_SET);
+    fun->insert(node->getId()->getName(), nullptr);
 }
 
 void CodeGen::visitIdentifier(const Identifier *node) {
@@ -80,19 +81,19 @@ void CodeGen::visitBinaryExpr(const BinaryExpr *node) {
 }
 
 void CodeGen::visitFunctionDeclaration(const ASTFunctionDeclaration *node) {
-    table->insert(node->getId()->getName(), nullptr);
-    table->initialize();
-    // table->insert(const std::string &str, Value *l)
-    for (const auto& param: node->getParams()) {
-        table->insert(param->getName(), nullptr);
-    }
+    // table->insert(node->getId()->getName(), nullptr);
+    // table->initialize();
+    // for (const auto& param: node->getParams()) {
+    //     table->insert(param->getName(), nullptr);
+    // }
     VMFunction* vFun = new VMFunction(node->getParams(), node->getId(), fun);
     fun->getChunk()->pushConstant(new Value(vFun));
     fun->getChunk()->pushCode(OP_SET);
     fun = vFun;
     node->getBlock()->accept(this);
     fun = vFun->getParent();
-    table->finalize();
+    // table->finalize();
+    fun->insert(node->getId()->getName(), nullptr);
 }
 
 void CodeGen::visitBlockStmt(const BlockStmt* node) {

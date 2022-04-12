@@ -19,6 +19,7 @@ enum OpCode: uint8_t {
     OP_GET,
     OP_SET,
     OP_CALL,
+    OP_CLOSURE,
     OP_RETURN
 };
 

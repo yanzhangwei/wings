@@ -11,5 +11,6 @@ const std::vector<std::string> Chunk::opcode = {
     "OP_GET",
     "OP_SET",
     "OP_CALL",
+    "OP_CLOSURE",
     "OP_RETURN"
 };

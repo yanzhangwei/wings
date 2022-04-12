@@ -29,7 +29,7 @@ private:
 private:
     CodeGen *codegen;
     std::vector<Value*> stack;
-    Symtab* table;
+    // Symtab* table;
     std::vector<CallFrame*> frames; 
 };
 #endif
