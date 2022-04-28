@@ -7,6 +7,9 @@
 #include "token.h"
 #include "value.h"
 #include "vm_function.h"
+#include "vm_instance.h"
+#include "vm_obj_literal.h"
+#include <optional>
 #include <string>
 #include <variant>
 
@@ -14,10 +17,9 @@
 VM::VM(const ASTProgram* ast): 
     codegen(new CodeGen)/*, table(new Symtab)*/ {
     codegen->visitASTProgram(ast);
-    frames.emplace_back(new CallFrame(codegen->getFunction()));
-    // auto asd = codegen->getSymtab();
-    
-    int a = 0;
+    frame = codegen->getFrame();
+    frames.emplace_back(frame);
+    // frames.emplace_back(new CallFrame(codegen->getFunction()));
 }
 
 VM::~VM() {
@@ -25,12 +27,14 @@ VM::~VM() {
 }
 
 void VM::run() {
-
-    auto frame = frames.back();
     codegen->dumpCallFrames(frame->fun);
     
-    auto readCode = [&]() { 
-        return frame->fun->getChunk()->getCode()[frame->ip++]; 
+    auto readCode = [&]() {
+        if (frame->fun->getChunk()->getCode().size() <= frame->ip && frames.size() > 1) {
+            frames.pop_back();
+            frame = frames.back();
+        }
+        return frame->fun->getChunk()->getCode()[frame->ip++];
     };
 
     auto readConstant = [&]() {
@@ -60,7 +64,79 @@ void VM::run() {
             case OP_CALL: {
                 int count = readCode();
                 call(peek(count), count);
-                frame = frames.back();
+                break;
+            }
+            case OP_INSTANCE: {
+                int count = readCode();
+                auto fun = std::get<VMFunction*>(peek(count)->getData());
+                auto instance = fun->getInstance();
+                while (count--) {
+                    stack.pop_back();
+                }
+                stack.pop_back();
+                stack.emplace_back(new Value(instance));
+                break;
+            }
+            case OP_GET_PROPS: {
+                auto instance = peek(1)->getData();
+                if (std::holds_alternative<std::string>(instance)) {
+                    Value* v = frame->lookup(std::get<std::string>(instance));
+                    if (std::holds_alternative<VMInstance*>(v->getData())) {
+                        VMInstance* vi = std::get<VMInstance*>(v->getData());
+                        std::string filed = std::get<std::string>(peek(0)->getData());
+                        pop();
+                        pop();
+                        stack.emplace_back(vi->find(filed));
+                    } else if (std::holds_alternative<VMObjLiteral*>(v->getData())) {
+                        VMObjLiteral* vo = std::get<VMObjLiteral*>(v->getData());
+                        std::string filed = std::get<std::string>(peek(0)->getData());
+                        pop();
+                        pop();
+                        stack.emplace_back(vo->find(filed));
+                    }
+                    
+                }
+                break;
+            }
+            case OP_SET_PROPS: {
+                auto instance = peek(1)->getData();
+                if (std::get<std::string>(instance) == "this") {
+                    frame->fun->insertKlass(std::get<std::string>(peek(0)->getData()), peek(2));
+                } else {
+                    VMInstance* v = std::get<VMInstance*>(frame->lookup(std::get<std::string>(instance))->getData());
+                    std::string filed = std::get<std::string>(peek(0)->getData());
+                    pop();
+                    pop();
+                    v->insert(filed, peek(0));
+                    pop();
+                }
+                pop();
+                pop();
+                pop();
+                break;
+            }
+            case OP_GET_OBJ_LITERAL_PROPS: {
+                // stack.emplace_back(new Value(new VM))
+                break;
+            }
+            case OP_SET_OBJ_LITERAL_PROPS: {
+                Value* v = peek(2);
+                if (v && std::holds_alternative<VMObjLiteral*>(v->getData())) {
+                    VMObjLiteral* objLiteral = std::get<VMObjLiteral*>(v->getData());
+                    objLiteral->insert(std::get<std::string>(peek(1)->getData()), peek(0));
+                    pop();
+                    pop();
+                } else {
+                    VMObjLiteral* objLiteral = new VMObjLiteral();
+                    objLiteral->insert(std::get<std::string>(peek(1)->getData()), peek(0));
+                    pop();
+                    pop();
+                    stack.emplace_back(new Value(objLiteral));
+                }
+                break;
+            }
+            case OP_THIS: {
+                stack.emplace_back(new Value(std::string("this")));
                 break;
             }
             case OP_RETURN: {
@@ -71,7 +147,7 @@ void VM::run() {
                 }
                 pop();
                 if (std::holds_alternative<std::string>(result->getData())) {
-                    if (auto val = frame->fun->lookup(std::get<std::string>(result->getData()))) {
+                    if (auto val = frame->lookup(std::get<std::string>(result->getData()))) {
                         stack.emplace_back(val);
                     } else {
                         stack.emplace_back(result);
@@ -80,14 +156,15 @@ void VM::run() {
                     stack.emplace_back(result);
                 }
                 frames.pop_back();
-                // table->finalize();
                 frame = frames.back();
 
                 break;
             }
             default: 
-                // table->finalize();
-                auto z = frame->fun->lookup("z");
+                auto z = frame->lookup("z");
+                if (std::holds_alternative<VMInstance*>(z->getData())) {
+                    int a = 0;
+                }
                 return;
         }
     }
@@ -126,23 +203,26 @@ Value* VM::pop() {
 }
 
 Value* VM::peek(const int& distance) const {
-    return stack[stack.size() - 1 - distance];
+    return stack.size() > distance ? stack[stack.size() - 1 - distance] : nullptr;
 }
 
 void VM::setTable() {
     auto data = peek(0)->getData();
     if (auto value = std::get_if<std::string>(&data)) {
-        frames.back()->fun->insert(std::get<std::string>(peek(0)->getData()), peek(1));
+        // frames.back()->insert(std::get<std::string>(peek(0)->getData()), peek(1));
+        frame->insert(std::get<std::string>(peek(0)->getData()), peek(1));
         pop();
         pop();
     } else if (auto value = std::get_if<VMFunction*>(&data)) {
-        frames.back()->fun->insert((*value)->getName()->getName(), new Value(*value));
+        // frames.back()->insert((*value)->getName()->getName(), new Value(*value));
+        frame->insert((*value)->getName()->getName(), new Value(*value));
         pop();
     }
 }
 
 void VM::getTable() {
-    Value* tmp = frames.back()->fun->lookup(std::get<std::string>(peek(0)->getData()));
+    // Value* tmp = frames.back()->lookup(std::get<std::string>(peek(0)->getData()));
+    Value* tmp = frame->lookup(std::get<std::string>(peek(0)->getData()));
     pop();
     stack.emplace_back(tmp);
 }
@@ -151,19 +231,17 @@ void VM::call(Value* val, const int& args) {
     if (!std::holds_alternative<VMFunction*>(val->getData()))
         return;
     VMFunction* fun = std::get<VMFunction*>(val->getData());
-    // if (fun->getName()->getName() == "inner") {
-    //     auto asd = fun->lookup("y");
-    // }
 
-    // table->initialize();
+
+    // CallFrame* frame = new CallFrame(fun);
+    // frame->slots = stack[stack.size() - 1 -args];
+    // frames.emplace_back(frame);
+    frame = fun->getFrame();
+    frame->slots = stack[stack.size() - 1 -args];
 
     for (int i = 0; i < fun->getParams().size(); ++i) {
-        fun->insert(fun->getParams()[i]->getName(), peek(args - i - 1));
+        frame->insert(fun->getParams()[i]->getName(), peek(args - i - 1));
     }
-
-    CallFrame* frame = new CallFrame(fun);
-    frame->slots = stack[stack.size() - 1 -args];
     frames.emplace_back(frame);
-
     codegen->dumpCallFrames(frame->fun);
 }

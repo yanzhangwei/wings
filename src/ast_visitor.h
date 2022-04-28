@@ -2,9 +2,6 @@
 #define _AST_VISITOR_H
 #pragma once
 
-// #include "ast_expr.h"
-// #include "ast_decl.h"
-// #include "ast_stmt.h"
 class ASTVariableDeclaration;
 class ASTVariableDeclarator;
 class Identifier;
@@ -26,6 +23,11 @@ class DoWhileStmt;
 class WhileStmt;
 class UnaryExpr;
 class ArrayExpr;
+class ThisExpr;
+class NewExpr;
+class FunctionExpr;
+class Property;
+class ObjectExpr;
 
 class ASTVisitor {
 public:
@@ -51,5 +53,10 @@ public:
     virtual void visitDoWhileStmt(const DoWhileStmt* node) = 0;
     virtual void visitUnaryExpr(const UnaryExpr* node) = 0;
     virtual void visitArrayExpr(const ArrayExpr* node) = 0;
+    virtual void visitThisExpr(const ThisExpr* node) = 0;
+    virtual void visitNewExpr(const NewExpr* node) = 0;
+    virtual void visitFunctionExpr(const FunctionExpr* node) = 0;
+    virtual void visitProperty(const Property* node) = 0;
+    virtual void visitObjectExpr(const ObjectExpr* node) = 0;
 };
 #endif

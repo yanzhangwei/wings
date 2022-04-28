@@ -34,6 +34,9 @@ enum class ASTType : uint8_t {
     AST_STMT_FORIN,
     AST_STMT_DOWHILE,
     AST_STMT_WHILE,
+    AST_EXPR_THIS,
+    AST_EXPR_NEW,
+    AST_EXPR_FUN,
 };
 
 class Expr;

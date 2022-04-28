@@ -64,6 +64,7 @@ public:
     void setValue(Expr* v) { value = v; }
     Expr* getKey() const { return key; }
     Expr* getValue() const { return value; }
+    std::string getKind() const { return kinds[kind]; }
     void setKind(const int& index) { kind = index; }
 private:
     Expr* key;
@@ -74,12 +75,14 @@ private:
 
 class ObjectExpr: public Expr {
 public:
+    void setProperties(const std::vector<Property*>& p) { properties = p; }
+    std::vector<Property*> getProperties() const { return properties; }
     virtual ASTType getType() const { 
         return ASTType::AST_EXPR_OBJECT; 
     }
     virtual void accept(ASTVisitor* visitor);
 private:
-    ExprPtrVec properties;
+    std::vector<Property*> properties;
 };
 
 class CallExpr: public Expr {
@@ -102,13 +105,15 @@ private:
 
 class MemberExpr: public Expr {
 public:
-    MemberExpr(): object(nullptr), property(nullptr) {}
+    MemberExpr(): object(nullptr), property(nullptr), isLeftHand(false) {}
     // ~MemberExpr() {
     //     delete object;
     //     delete property;
     // }
     void setObject(Expr* o) { object = o; }
     void setProperty(Expr* p) { property = p; }
+    void setIsLeftHand() { isLeftHand = true; }
+    bool getIsLeftHand() const { return isLeftHand; }
     Expr* getObject() const { return object; }
     Expr* getProperty() const { return property; }
     virtual ASTType getType() const { 
@@ -118,6 +123,7 @@ public:
 private:
     Expr* object;
     Expr* property;
+    bool isLeftHand;
 };
 
 class ConditionExpr {
@@ -161,5 +167,47 @@ private:
     bool prefix;
     Token op;
     Expr* argument;
+};
+
+class ThisExpr: public Expr {
+public:
+    virtual ASTType getType() const { 
+        return ASTType::AST_EXPR_THIS; 
+    }
+    virtual void accept(ASTVisitor* visitor);
+};
+
+class NewExpr: public Expr {
+public:
+    virtual ASTType getType() const { 
+        return ASTType::AST_EXPR_NEW; 
+    }
+    virtual void accept(ASTVisitor* visitor);
+    void setCallee(Expr* e) { callee = e; }
+    void setArguments(const std::vector<Expr*>& vec) { arguments =vec; }
+    Expr* getCallee() const { return callee; }
+    std::vector<Expr*> getArguments() const { return arguments; }
+private:
+    Expr* callee;
+    std::vector<Expr*> arguments;
+};
+
+class FunctionExpr: public Expr {
+public:
+    FunctionExpr(): id(nullptr), block(nullptr) {}
+    virtual ASTType getType() const { 
+        return ASTType::AST_EXPR_FUN; 
+    }
+    virtual void accept(ASTVisitor* visitor);
+    void setId(Identifier* i) { id = i; }
+    void setParams(const std::vector<Identifier*>& p) { params = p; }
+    void setBlock(Expr* b) { block = b; }
+    Identifier* getId() const { return id; }
+    std::vector<Identifier*> getParams() const { return params; }
+    Expr* getBlock() const { return block; }
+private:
+    Identifier* id;
+    std::vector<Identifier*> params;
+    Expr* block;
 };
 #endif

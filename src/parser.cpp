@@ -3,6 +3,7 @@
 #include "ast_decl.h"
 #include "ast_expr.h"
 #include "ast_stmt.h"
+#include "ast_visitor.h"
 #include "token.h"
 #include <cstdlib>
 #include <cstring>
@@ -10,8 +11,8 @@
 #include <variant>
 #include <vector>
 
-Parser::Parser(Scanner* sc): scanner(sc), rollback(false),
-        record(false), token(std::move(sc->scanToken())) {
+Parser::Parser(Scanner* sc): scanner(sc)/*, rollback(false),
+        record(false)*/, token(std::move(sc->scanToken())) {
 }
 
 Parser::~Parser() { delete scanner; }
@@ -169,6 +170,7 @@ Expr* Parser::parseContinueStatement() {
     match(TokenType::TOKEN_SEMICOLON);
     return e; 
 }
+
 Expr* Parser::parseBreakStatement() {
     if (match(TokenType::TOKEN_SEMICOLON)) {
         Expr* e = new BreakStmt();
@@ -197,20 +199,23 @@ Expr* Parser::parseWithStatement() {
 Expr* Parser::parseSwitchStatement() {
 
 }
+
 Expr* Parser::parseThrowStatement() {
 
 }
+
 Expr* Parser::parseTryStatement() {
 
 }
+
 Expr* Parser::parseDebuggerStatement() {
 
 }
 
 Expr* Parser::parsePrimaryExpression() {
-    /*if (match(TokenType::TOKEN_THIS, false)) {
-
-    } else*/ if (match(TokenType::TOKEN_LEFT_BRACKET)) {
+    if (match(TokenType::TOKEN_THIS)) {
+        return parseThisExpr();
+    } else if (match(TokenType::TOKEN_LEFT_BRACKET)) {
         return parseArrayLiteral();
     } else if (match(TokenType::TOKEN_LEFT_BRACE)) {
         return parseObjectLiteral();
@@ -245,13 +250,9 @@ Expr* Parser::parseArrayLiteral() {
 }
 
 Expr* Parser::parseObjectLiteral() {
-    ObjectExpr* e;
+    ObjectExpr* e = new ObjectExpr;
     if (match(TokenType::TOKEN_RIGHT_BRACE)) return e;
-    // if (isPropertyName()) {
-    //     Property* p = new Property;
-        
-    // }
-    parsePropertyNameAndValueList();
+    e->setProperties(parsePropertyNameAndValueList());
     match(TokenType::TOKEN_COMMA);
     match(TokenType::TOKEN_RIGHT_BRACE);
     return e;
@@ -265,17 +266,27 @@ Expr* Parser::parseExpression() {
 }
 
 Expr* Parser::parseMemberExpression() {
-    Expr* e = parsePrimaryExpression();
+    NewExpr* ne = nullptr;
+    Expr* e;
+    // Expr* newOrFun = nullptr;
+    if (match(TokenType::TOKEN_NEW)) {
+        ne = new NewExpr;
+    }
+    if (match(TokenType::TOKEN_FUNCTION)) {
+        e = parseFunctionExpression();
+    } else {
+        e = parsePrimaryExpression();
+    }
     MemberExpr* res = new MemberExpr;
-    bool first = true;
+    bool once = true;
     while (match(TokenType::TOKEN_DOT, false) ||
            match(TokenType::TOKEN_LEFT_BRACKET, false)) {
         MemberExpr* me = new MemberExpr;
-        if (!first) {
+        if (!once) {
             me->setObject(res);
         } else {
             me->setObject(e);
-            first = false;
+            once = false;
         }
         if (match(TokenType::TOKEN_DOT))
             me->setProperty(parseIdentifier());
@@ -285,11 +296,31 @@ Expr* Parser::parseMemberExpression() {
         }
         res = me;
     }
-    return first ? e : res;
+    if (ne) {
+        ne->setCallee(once ? e : res);
+        ne->setArguments(parseArguments());
+        return ne;
+    }
+    // if (newOrFun) {
+    //     if (newOrFun->getType() == ASTType::AST_EXPR_NEW) {
+    //         dynamic_cast<NewExpr*>(newOrFun)->setCallee(once ? e : res);
+    //         dynamic_cast<NewExpr*>(newOrFun)->setArguments(parseArguments());
+    //         return newOrFun;
+    //     } else {
+    //         dynamic_cast<FunctionExpr*>(newOrFun)
+    //     }
+    // }
+    return once ? e : res;
 }
 
 Expr* Parser::parseNewExpression() {
-    while (match(TokenType::TOKEN_NEW)) ;
+    // NewExpr* e = new NewExpr;
+    // while (match(TokenType::TOKEN_NEW)) {
+    //     if (getCurrentToken().getTokenType() != TokenType::TOKEN_NEW) {
+    //         auto asd = dynamic_cast<MemberExpr*>(parseMemberExpression());
+    //         int a = 0;
+    //     }
+    // }
     return parseMemberExpression();
 }
 
@@ -525,6 +556,9 @@ Expr* Parser::parseConditionalExpressionNoIn() {}
 
 Expr* Parser::parseAssignmentExpression(bool noIn) {
     Expr* LHS = parseConditionalExpression(noIn);
+    if (auto lhs = dynamic_cast<MemberExpr*>(LHS)) {
+        lhs->setIsLeftHand();
+    }
     while (isAssignmentOperator()) {
         Token t = getCurrentToken();
         next();
@@ -567,12 +601,23 @@ Expr* Parser::parseInitialiser(bool noIn) {
 
 Expr* Parser::parseInitialiserNoIn() {}
 
-Expr* Parser::parsePropertyNameAndValueList() {
-    parsePropertyAssignment();
-    match(TokenType::TOKEN_RIGHT_BRACE);
+Expr* Parser::parseThisExpr() {
+    return new ThisExpr;
 }
 
-Expr* Parser::parsePropertyAssignment() {
+std::vector<Property*> Parser::parsePropertyNameAndValueList() {
+    std::vector<Property*> properties;
+    properties.emplace_back(parsePropertyAssignment());
+    while (match(TokenType::TOKEN_COMMA)) {
+        if (match(TokenType::TOKEN_RIGHT_BRACE))
+            break;
+        properties.emplace_back(parsePropertyAssignment());
+    }
+    match(TokenType::TOKEN_RIGHT_BRACE);
+    return properties;
+}
+
+Property* Parser::parsePropertyAssignment() {
     Property* p = new Property();
     auto isGetOrSet = [](const Token& t) {
         if (std::memcmp(t.getStart(), "get", 3) == 0)
@@ -597,6 +642,7 @@ Expr* Parser::parsePropertyAssignment() {
                     if (match(TokenType::TOKEN_RIGHT_PAREN))
                         if (match(TokenType::TOKEN_LEFT_BRACE)) {
                             // functionbody
+                            parseFunctionBody();
                             match(TokenType::TOKEN_RIGHT_BRACE);
                         }
                 }
@@ -609,6 +655,7 @@ Expr* Parser::parsePropertyAssignment() {
                     if (match(TokenType::TOKEN_RIGHT_PAREN))
                         if (match(TokenType::TOKEN_LEFT_BRACE)) {
                             // functionbody
+                            parseFunctionBody();
                             match(TokenType::TOKEN_RIGHT_BRACE);
                         }
                 }
@@ -645,10 +692,20 @@ Expr* Parser::parseFunctionDeclaration() {
 }
 
 Expr* Parser::parseFunctionExpression() {
+    FunctionExpr* e = new FunctionExpr;
     match(TokenType::TOKEN_FUNCTION); // opt
-    if (match(TokenType::TOKEN_LEFT_PAREN)) {
-
+    if (match(TokenType::TOKEN_IDENTIFIER, false)) {
+        e->setId(dynamic_cast<Identifier*>(parseIdentifier()));
     }
+    if (match(TokenType::TOKEN_LEFT_PAREN)) {
+        if (match(TokenType::TOKEN_IDENTIFIER, false)) {
+            e->setParams(parseFormalParameterList());
+        }
+        match(TokenType::TOKEN_RIGHT_PAREN);
+    }
+    match(TokenType::TOKEN_LEFT_BRACE);
+    e->setBlock(parseFunctionBody());
+    return e;
 }
 
 std::vector<Identifier*> Parser::parseFormalParameterList() {
@@ -662,23 +719,25 @@ std::vector<Identifier*> Parser::parseFormalParameterList() {
 
 Expr* Parser::parseFunctionBody() {
     BlockStmt* stmt = new BlockStmt;
-    while (!match(TokenType::TOKEN_RIGHT_BRACE)) 
+    while (!match(TokenType::TOKEN_RIGHT_BRACE)) {
+        if (getCurrentToken().getTokenType() == TokenType::TOKEN_RETURN)
+            stmt->changeReturnStmtStatus();
         stmt->push_back(parseSourceElement());
+    }
     return stmt;
 }
 
 void Parser::next() {
-    if (record) tokenBuffer.emplace(token);
-    if (rollback && tokenBuffer.size()) {
-        token = *tokenBuffer.begin();
-        tokenBuffer.erase(tokenBuffer.begin());
-        return;
-    }
+    // if (record) tokenBuffer.emplace(token);
+    // if (rollback && tokenBuffer.size()) {
+    //     token = *tokenBuffer.begin();
+    //     tokenBuffer.erase(tokenBuffer.begin());
+    //     return;
+    // }
     token = scanner->scanToken();
 }
 
 Token Parser::getCurrentToken() {
-    if (rollback && tokenBuffer.size()) token = *tokenBuffer.begin();
     return token;
 }
 
@@ -686,8 +745,6 @@ bool Parser::match(const TokenType& t, bool next) {
     if (getCurrentToken().getTokenType() != t) return false;
     if (next) {
         this->next();
-    } else if (record) {
-        tokenBuffer.emplace(token);
     }
     return true; 
 }

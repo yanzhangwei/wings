@@ -1,7 +1,8 @@
 var a = 4;
 
 function sum(a, b, c) {
-    return b + a * c;
+    var x = b;
+    return x  + a * c;
 }
 
 var b = 5;

@@ -367,6 +367,94 @@ void ASTDump::visitArrayExpr(const ArrayExpr* node) {
 
 }
 
+void ASTDump::visitThisExpr(const ThisExpr* node) {
+    printType("ThisExpr");
+    printRightBrace();
+}
+
+void ASTDump::visitNewExpr(const NewExpr *node) {
+    printType("NewExpr");
+
+    printTab();
+    std::cout << "callee ";
+    printLeftBrace();
+    node->getCallee()->accept(this);
+    printRightBrace();
+
+    printTab();
+    std::cout << "arguments ";
+    printLeftBracket();
+    for (const auto& arg : node->getArguments()) {
+        arg->accept(this);
+    }
+    printRightBracket();
+
+    printRightBrace();
+}
+
+void ASTDump::visitFunctionExpr(const FunctionExpr *node) {
+    printType("FunctionExpr");
+
+    printTab();
+    std::cout<< "id: ";
+    if (node->getId()) {
+        printLeftBrace();
+        node->getId()->accept(this);
+        printRightBrace();
+    } else {
+        std::cout << "null" << std::endl;
+    }
+
+    printTab();
+    std::cout<< "params: ";
+    printLeftBracket();
+    for (const auto& p: node->getParams())
+        p->accept(this);
+    printRightBracket();
+
+    printTab();
+    std::cout<< "body: ";
+    printLeftBracket();
+    node->getBlock()->accept(this);
+    printRightBracket();
+
+    printRightBrace();
+}
+
+void ASTDump::visitProperty(const Property *node) {
+    printType("property");
+
+    printTab();
+    std::cout << "key: ";
+    printLeftBrace();
+    node->getKey()->accept(this);
+    printRightBrace();
+
+    printTab();
+    std::cout << "value: ";
+    printLeftBrace();
+    node->getValue()->accept(this);
+    printRightBrace();
+
+    printTab();
+    std::cout << "kind: " << node->getKind() << std::endl;
+
+    printRightBrace();
+}
+
+void ASTDump::visitObjectExpr(const ObjectExpr* node) {
+    printType("ObjectExpr");
+
+    printTab();
+    std::cout << "properties: ";
+    printLeftBracket();
+    for (const auto& p: node->getProperties()) {
+        p->accept(this);
+    }
+    printRightBracket();
+    printRightBrace();
+}
+
 void ASTDump::printTab() const {
     for (int i = 0; i < deep; ++i) {
         std::cout << "|-";
@@ -401,67 +489,4 @@ void ASTDump::printType(const std::string& type) {
     printLeftBrace();
     printTab();
     std::cout << "type: " << type << std::endl;
-}
-
-void ASTDump::visit(Expr* e) {
-    // switch (e->getType()) {
-    //     case ASTType::AST_VARIABLEDECLARATION:
-    //         visitVariableDeclaration(dynamic_cast<ASTVariableDeclaration*>(e));
-    //         break;
-    //     case ASTType::AST_VARIABLEDECLARATOR:
-    //         visitVariableDeclarator(dynamic_cast<ASTVariableDeclarator*>(e));
-    //         break;
-    //     case ASTType::AST_EXPR_IDENTIFIER:
-    //         visitIdentifier(dynamic_cast<Identifier*>(e));
-    //         break;
-    //     case ASTType::AST_EXPR_MEMBER:
-    //         visitMemberExpr(dynamic_cast<MemberExpr*>(e));
-    //         break;
-    //     case ASTType::AST_EXPR_LITERAL:
-    //         visitLiteral(dynamic_cast<Literal*>(e));
-    //         break;
-    //     case ASTType::AST_EXPR_CALL:
-    //         visitCallExpr(dynamic_cast<CallExpr*>(e));
-    //         break;
-    //     case ASTType::AST_EXPR_BINARY:
-    //         visitBinaryExpr(dynamic_cast<BinaryExpr*>(e));
-    //         break;
-    //     case ASTType::AST_FUNCTIONDECLARATION:
-    //         visitFunctionDeclaration(dynamic_cast<ASTFunctionDeclaration*>(e));
-    //         break;
-    //     case ASTType::AST_STMT_BLOCK:
-    //         visitBlockStmt(dynamic_cast<BlockStmt*>(e));
-    //         break;
-    //     case ASTType::AST_STMT_RETURN:
-    //         visitReturnStmt(dynamic_cast<ReturnStmt*>(e));
-    //         break;
-    //     case ASTType::AST_STMT_IF:
-    //         visitIfStmt(dynamic_cast<IfStmt*>(e));
-    //         break;
-    //     case ASTType::AST_EXPR_ASSIGNMENT:
-    //         visitAssignmentExpr(dynamic_cast<AssignmentExpr*>(e));
-    //         break;
-    //     case ASTType::AST_STMT_LABEL:
-    //         visitLabelStmt(dynamic_cast<LabelStmt*>(e));
-    //         break;
-    //     case ASTType::AST_STMT_FOR:
-    //         visitForStmt(dynamic_cast<ForStmt*>(e));
-    //         break;
-    //     case ASTType::AST_STMT_FORIN:
-    //         visitForInStmt(dynamic_cast<ForInStmt*>(e));
-    //         break;
-    //     case ASTType::AST_STMT_WHILE:
-    //         visitWhileStmt(dynamic_cast<WhileStmt*>(e));
-    //         break;
-    //     case ASTType::AST_STMT_DOWHILE:
-    //         visitDoWhileStmt(dynamic_cast<DoWhileStmt*>(e));
-    //         break;
-    //     case ASTType::AST_STMT_CONTINUE:
-    //         visitContinueStmt(dynamic_cast<ContinueStmt*>(e));
-    //         break;
-    //     case ASTType::AST_EXPR_UNARY:
-    //         visitUnaryExpr(dynamic_cast<UnaryExpr*>(e));
-    //         break;
-    //     default: break;;
-    // }
 }

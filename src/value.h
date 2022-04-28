@@ -1,12 +1,14 @@
 #ifndef _VALUE_H
 #define _VALUE_H
-#include <iostream>
 #pragma once
 
+#include <iostream>
 #include <string>
 #include <variant>
 
 class VMFunction;
+class VMInstance;
+class VMObjLiteral;
 
 class Value {
 public:
@@ -15,7 +17,9 @@ public:
         bool, 
         std::string, 
         std::monostate, 
-        VMFunction*
+        VMFunction*,
+        VMInstance*,
+        VMObjLiteral*
     >;
     Value(const value& v): data(v) {}
     value getData() const { return data; }

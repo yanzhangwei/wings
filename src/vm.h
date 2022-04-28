@@ -31,5 +31,6 @@ private:
     std::vector<Value*> stack;
     // Symtab* table;
     std::vector<CallFrame*> frames; 
+    CallFrame* frame;
 };
 #endif

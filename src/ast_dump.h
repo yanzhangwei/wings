@@ -32,6 +32,11 @@ public:
     virtual void visitDoWhileStmt(const DoWhileStmt* node);
     virtual void visitUnaryExpr(const UnaryExpr* node);
     virtual void visitArrayExpr(const ArrayExpr* node);
+    virtual void visitThisExpr(const ThisExpr* node);
+    virtual void visitNewExpr(const NewExpr* node);
+    virtual void visitFunctionExpr(const FunctionExpr* node);
+    virtual void visitProperty(const Property* node);
+    virtual void visitObjectExpr(const ObjectExpr* node);
 private:
     void printTab() const;
     void printLeftBrace();
@@ -39,8 +44,6 @@ private:
     void printLeftBracket();
     void printRightBracket();
     void printType(const std::string& type);
-
-    void visit(Expr* e);
 private:
     int deep;
 };

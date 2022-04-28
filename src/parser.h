@@ -85,8 +85,10 @@ private:
     Expr* parseInitialiser(bool noIn = false);
     Expr* parseInitialiserNoIn();
 
-    Expr* parsePropertyNameAndValueList();
-    Expr* parsePropertyAssignment();
+    Expr* parseThisExpr();
+
+    std::vector<Property*> parsePropertyNameAndValueList();
+    Property* parsePropertyAssignment();
     Expr* parsePropertyName();
 
     Expr* parseFunctionDeclaration();
@@ -105,8 +107,5 @@ private:
 private:
     Token token;
     Scanner *scanner;
-    bool rollback;
-    bool record;
-    TokenSet tokenBuffer;
 };
 #endif

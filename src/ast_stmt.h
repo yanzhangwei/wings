@@ -8,6 +8,9 @@
 
 class BlockStmt: public Expr {
 public:
+    BlockStmt(): hasReturnStmt(false) {}
+    void changeReturnStmtStatus() { hasReturnStmt = true; }
+    bool getReturnStmtStatus() const { return hasReturnStmt; }
     virtual ASTType getType() const { 
         return ASTType::AST_STMT_BLOCK; 
     }
@@ -16,6 +19,7 @@ public:
     ExprPtrVec getBody() const { return body; }
 private:
     ExprPtrVec body;
+    bool hasReturnStmt;
 };
 
 class ReturnStmt: public Expr {

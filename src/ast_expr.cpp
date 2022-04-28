@@ -2,7 +2,7 @@
 #include "ast_decl.h"
 #include "ast_stmt.h"
 #include "ast_expr_literal.h"
-// #include "ast_visitor.h"
+#include "ast_visitor.h"
 
 void Identifier::accept(ASTVisitor *visitor) {
     visitor->visitIdentifier(this);
@@ -17,11 +17,11 @@ void ArrayExpr::accept(ASTVisitor *visitor) {
 }
 
 void Property::accept(ASTVisitor *visitor) {
-    // visitor->
+    visitor->visitProperty(this);
 }
 
 void ObjectExpr::accept(ASTVisitor *visitor) {
-
+    visitor->visitObjectExpr(this);
 }
 
 void CallExpr::accept(ASTVisitor *visitor) {
@@ -98,4 +98,16 @@ void ASTVariableDeclarator::accept(ASTVisitor *visitor) {
 
 void ASTFunctionDeclaration::accept(ASTVisitor *visitor) {
     visitor->visitFunctionDeclaration(this);
+}
+
+void ThisExpr::accept(ASTVisitor *visitor) {
+    visitor->visitThisExpr(this);
+}
+
+void NewExpr::accept(ASTVisitor *visitor) {
+    visitor->visitNewExpr(this);
+}
+
+void FunctionExpr::accept(ASTVisitor *visitor) {
+    visitor->visitFunctionExpr(this);
 }

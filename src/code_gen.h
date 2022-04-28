@@ -10,7 +10,8 @@
 
 class CodeGen: public ASTVisitor {
 public:
-    CodeGen(): fun(new VMFunction)/*, table(new Symtab)*/ {}
+    // CodeGen(): fun(new VMFunction)/*, table(new Symtab)*/ {}
+    CodeGen(): frame(new CallFrame()) {}
     void visitASTProgram(const ASTProgram* node);
     virtual void visitVariableDeclaration(const ASTVariableDeclaration* node);
     virtual void visitVariableDeclarator(const ASTVariableDeclarator* node);
@@ -33,12 +34,19 @@ public:
     virtual void visitDoWhileStmt(const DoWhileStmt* node);
     virtual void visitUnaryExpr(const UnaryExpr* node);
     virtual void visitArrayExpr(const ArrayExpr* node);
+    virtual void visitThisExpr(const ThisExpr* node);
+    virtual void visitNewExpr(const NewExpr* node);
+    virtual void visitFunctionExpr(const FunctionExpr* node);
+    virtual void visitProperty(const Property* node);
+    virtual void visitObjectExpr(const ObjectExpr* node);
 
     void dumpCallFrames(const VMFunction* fun) const;
-    VMFunction* getFunction() const { return fun; }
+    // VMFunction* getFunction() const { return fun; }
     // Symtab* getSymtab() const { return table; }
+    CallFrame* getFrame() const { return frame; }
 private:
-    VMFunction* fun;
-    // Symtab* table; 
+    // VMFunction* fun;
+    // Symtab* table;
+    CallFrame* frame; 
 };
 #endif
