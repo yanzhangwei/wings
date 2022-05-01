@@ -1,6 +1,7 @@
 #include "chunk.h"
 
 const std::vector<std::string> Chunk::opcode = {
+    "OP_DUP",
     "OP_IDENTIFIER",
     "OP_CONSTANT",
     "OP_PLUS",
@@ -17,6 +18,7 @@ const std::vector<std::string> Chunk::opcode = {
     "OP_SET_PROPS",
     "OP_GET_OBJ_LITERAL_PROPS",
     "OP_SET_OBJ_LITERAL_PROPS",
+    "OP_METHOD",
     "OP_THIS",
     "OP_RETURN"
 };

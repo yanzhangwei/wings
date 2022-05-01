@@ -9,6 +9,7 @@
 
 enum OpCode: uint8_t {
     // OP_PRINT,
+    OP_DUP,
     OP_IDENTIFIER,
     OP_CONSTANT,
     OP_PLUS,
@@ -25,6 +26,7 @@ enum OpCode: uint8_t {
     OP_SET_PROPS,
     OP_GET_OBJ_LITERAL_PROPS,
     OP_SET_OBJ_LITERAL_PROPS,
+    OP_METHOD,
     OP_THIS,
     OP_RETURN
 };

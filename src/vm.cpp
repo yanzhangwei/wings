@@ -38,13 +38,15 @@ void VM::run() {
     };
 
     auto readConstant = [&]() {
-        // auto chunk = frame->fun->getChunk();
         return frame->fun->getChunk()->getConstantByIndex(frame->ip++);
     };
 
     while (1) {
         int instruction = readCode();
         switch (instruction) {
+            case OP_DUP:
+                stack.emplace_back(stack.back());
+                break;
             case OP_CONSTANT:
                 stack.emplace_back(readConstant());
                 break;
@@ -80,21 +82,31 @@ void VM::run() {
             case OP_GET_PROPS: {
                 auto instance = peek(1)->getData();
                 if (std::holds_alternative<std::string>(instance)) {
-                    Value* v = frame->lookup(std::get<std::string>(instance));
-                    if (std::holds_alternative<VMInstance*>(v->getData())) {
-                        VMInstance* vi = std::get<VMInstance*>(v->getData());
+                    std::string fields = std::get<std::string>(instance);
+                    if (fields.compare("this") == 0) {
+                        std::string v = frame->fun->getCaller();
+                        VMObjLiteral* objLiteral = std::get<VMObjLiteral*>(frame->lookup(v)->getData());
+                        // stack.emplace_back(objLiteral->find(peek(0)));
                         std::string filed = std::get<std::string>(peek(0)->getData());
                         pop();
                         pop();
-                        stack.emplace_back(vi->find(filed));
-                    } else if (std::holds_alternative<VMObjLiteral*>(v->getData())) {
-                        VMObjLiteral* vo = std::get<VMObjLiteral*>(v->getData());
-                        std::string filed = std::get<std::string>(peek(0)->getData());
-                        pop();
-                        pop();
-                        stack.emplace_back(vo->find(filed));
-                    }
-                    
+                        stack.emplace_back(objLiteral->find(filed));
+                    } else {
+                        Value* v = frame->lookup(fields);
+                        if (std::holds_alternative<VMInstance*>(v->getData())) {
+                            VMInstance* vi = std::get<VMInstance*>(v->getData());
+                            std::string filed = std::get<std::string>(peek(0)->getData());
+                            pop();
+                            pop();
+                            stack.emplace_back(vi->find(filed));
+                        } else if (std::holds_alternative<VMObjLiteral*>(v->getData())) {
+                            VMObjLiteral* vo = std::get<VMObjLiteral*>(v->getData());
+                            std::string filed = std::get<std::string>(peek(0)->getData());
+                            pop();
+                            pop();
+                            stack.emplace_back(vo->find(filed));
+                        }
+                    }                  
                 }
                 break;
             }
@@ -104,10 +116,10 @@ void VM::run() {
                     frame->fun->insertKlass(std::get<std::string>(peek(0)->getData()), peek(2));
                 } else {
                     VMInstance* v = std::get<VMInstance*>(frame->lookup(std::get<std::string>(instance))->getData());
-                    std::string filed = std::get<std::string>(peek(0)->getData());
+                    std::string fields = std::get<std::string>(peek(0)->getData());
                     pop();
                     pop();
-                    v->insert(filed, peek(0));
+                    v->insert(fields, peek(0));
                     pop();
                 }
                 pop();
@@ -231,13 +243,13 @@ void VM::call(Value* val, const int& args) {
     if (!std::holds_alternative<VMFunction*>(val->getData()))
         return;
     VMFunction* fun = std::get<VMFunction*>(val->getData());
-
+    fun->setCaller(std::get<std::string>(peek(args + 1)->getData()));
 
     // CallFrame* frame = new CallFrame(fun);
     // frame->slots = stack[stack.size() - 1 -args];
     // frames.emplace_back(frame);
     frame = fun->getFrame();
-    frame->slots = stack[stack.size() - 1 -args];
+    frame->slots = stack[stack.size() - 1 -args - 1];
 
     for (int i = 0; i < fun->getParams().size(); ++i) {
         frame->insert(fun->getParams()[i]->getName(), peek(args - i - 1));

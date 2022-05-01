@@ -22,79 +22,80 @@ void CodeGen::visitVariableDeclaration(const ASTVariableDeclaration *node) {
 }
 
 void CodeGen::visitVariableDeclarator(const ASTVariableDeclarator *node) {
-    // table->insert(node->getId()->getName(), nullptr);
     node->getInit()->accept(this);
     if (node->getInit()->getType() == ASTType::AST_EXPR_IDENTIFIER)
-        frame->fun->getChunk()->pushCode(OP_GET);
+        frame->pushCode(OP_GET);
     node->getId()->accept(this);
-    frame->fun->getChunk()->pushCode(OP_SET);
+    frame->pushCode(OP_SET);
     frame->insert(node->getId()->getName(), nullptr);
 }
 
 void CodeGen::visitIdentifier(const Identifier *node) {
-    frame->fun->getChunk()->pushConstant(new Value(node->getName()));
+    frame->pushConstant(new Value(node->getName()));
 }
 
 void CodeGen::visitMemberExpr(const MemberExpr* node) {
     node->getObject()->accept(this);
+    if (node->getIsFun())
+        frame->pushCode(OP_DUP);
     node->getProperty()->accept(this);
-    frame->fun->getChunk()->pushCode(node->getIsLeftHand() ? OP_SET_PROPS : OP_GET_PROPS);
+    frame->pushCode(node->getIsLeftHand() ? OP_SET_PROPS : OP_GET_PROPS);
 }
 
 void CodeGen::visitLiteral(const Literal *node) {
     auto data = node->getValue();
     if (std::holds_alternative<double>(data)) {
-        frame->fun->getChunk()->pushConstant(new Value(std::get<double>(data)));
+        frame->pushConstant(new Value(std::get<double>(data)));
     } else if (std::holds_alternative<bool>(data)) {
-        frame->fun->getChunk()->pushConstant(new Value(std::get<bool>(data)));
+        frame->pushConstant(new Value(std::get<bool>(data)));
     } else if (std::holds_alternative<std::string>(data)) {
-        frame->fun->getChunk()->pushConstant(new Value(std::get<std::string>(data)));
+        frame->pushConstant(new Value(std::get<std::string>(data)));
     } else {
-        frame->fun->getChunk()->pushConstant(new Value(std::monostate()));
+        frame->pushConstant(new Value(std::monostate()));
     }
 }
 
 void CodeGen::visitCallExpr(const CallExpr *node) {
     node->getCallee()->accept(this);
-    frame->fun->getChunk()->pushCode(OP_GET);
-
+    if (node->getCallee()->getType() != ASTType::AST_EXPR_MEMBER)
+        frame->pushCode(OP_GET);
     for (const auto& arg: node->getArgs())
         arg->accept(this);
-    frame->fun->getChunk()->pushCode(OP_CALL);
-    frame->fun->getChunk()->pushCode(node->getArgs().size());
+    frame->pushCode(OP_CALL);
+    frame->pushCode(node->getArgs().size());
 }
 
 void CodeGen::visitBinaryExpr(const BinaryExpr *node) {
     node->getLHS()->accept(this);
     if (node->getLHS()->getType() == ASTType::AST_EXPR_IDENTIFIER)
-        frame->fun->getChunk()->pushCode(OP_GET);
+        frame->pushCode(OP_GET);
     node->getRHS()->accept(this);
     if (node->getRHS()->getType() == ASTType::AST_EXPR_IDENTIFIER)
-        frame->fun->getChunk()->pushCode(OP_GET);
+        frame->pushCode(OP_GET);
     std::string op = node->getOp();
     if (op == "+") {
-        frame->fun->getChunk()->pushCode(OP_PLUS);
+        frame->pushCode(OP_PLUS);
     } else if (op == "-") {
-        frame->fun->getChunk()->pushCode(OP_MINUS);
+        frame->pushCode(OP_MINUS);
     } else if (op == "*") {
-        frame->fun->getChunk()->pushCode(OP_MUL);
+        frame->pushCode(OP_MUL);
     } else if (op == "/") {
-        frame->fun->getChunk()->pushCode(OP_DIV);
+        frame->pushCode(OP_DIV);
     } else if (op == "%") {
-        frame->fun->getChunk()->pushCode(OP_MOD);    
+        frame->pushCode(OP_MOD);    
     }
 }
 
 void CodeGen::visitFunctionDeclaration(const ASTFunctionDeclaration *node) {
     VMFunction* vFun = new VMFunction(node->getParams(), node->getId());
     CallFrame *newFrame = new CallFrame(vFun, frame);
-    frame->fun->getChunk()->pushConstant(new Value(vFun));
-    frame->fun->getChunk()->pushCode(OP_SET);
+    frame->pushConstant(new Value(vFun));
+    frame->pushCode(OP_SET);
     // fun = vFun;
     frame = newFrame;
     node->getBlock()->accept(this);
     // if (!dynamic_cast<BlockStmt*>(node->getBlock())->getReturnStmtStatus()) {
-    //     frame->fun->getChunk()->pushCode(OP_RETURN);
+    //     frame->pushCode(OP_RETURN);
     // }
     // fun = vFun->getParent();
     frame = newFrame->prev;
@@ -108,7 +109,7 @@ void CodeGen::visitBlockStmt(const BlockStmt* node) {
 
 void CodeGen::visitReturnStmt(const ReturnStmt* node) {
     node->getArgument()->accept(this);
-    frame->fun->getChunk()->pushCode(OP_RETURN);
+    frame->pushCode(OP_RETURN);
 }
 
 void CodeGen::visitIfStmt(const IfStmt* node) {
@@ -118,15 +119,15 @@ void CodeGen::visitIfStmt(const IfStmt* node) {
 void CodeGen::visitAssignmentExpr(const AssignmentExpr* node) {
     node->getRHS()->accept(this);
     if (node->getRHS()->getType() == ASTType::AST_EXPR_IDENTIFIER)
-        frame->fun->getChunk()->pushCode(OP_GET);
+        frame->pushCode(OP_GET);
     if (node->getOp() == "+=") {
         node->getLHS()->accept(this);
-        frame->fun->getChunk()->pushCode(OP_GET);
-        frame->fun->getChunk()->pushCode(OP_PLUS);
+        frame->pushCode(OP_GET);
+        frame->pushCode(OP_PLUS);
     }
     node->getLHS()->accept(this);
     if (node->getLHS()->getType() != ASTType::AST_EXPR_MEMBER) 
-        frame->fun->getChunk()->pushCode(OP_SET);
+        frame->pushCode(OP_SET);
 }
 
 void CodeGen::visitLabelStmt(const LabelStmt* node) {
@@ -166,30 +167,48 @@ void CodeGen::visitArrayExpr(const ArrayExpr* node) {
 }
 
 void CodeGen::visitThisExpr(const ThisExpr *node) {
-    frame->fun->getChunk()->pushCode(OP_THIS);
+    frame->pushCode(OP_THIS);
 }
 
 void CodeGen::visitNewExpr(const NewExpr *node) {
     node->getCallee()->accept(this);
-    frame->fun->getChunk()->pushCode(OP_GET);
+    frame->pushCode(OP_GET);
     for (const auto& arg: node->getArguments()) {
         arg->accept(this);
     }
-    frame->fun->getChunk()->pushCode(OP_CALL);
-    frame->fun->getChunk()->pushCode(node->getArguments().size());
+    frame->pushCode(OP_CALL);
+    frame->pushCode(node->getArguments().size());
 
-    frame->fun->getChunk()->pushCode(OP_INSTANCE);
-    frame->fun->getChunk()->pushCode(node->getArguments().size());
+    frame->pushCode(OP_INSTANCE);
+    frame->pushCode(node->getArguments().size());
 }
 
 void CodeGen::visitFunctionExpr(const FunctionExpr *node) {
-    
+    VMFunction* vFun = new VMFunction(node->getParams(), node->getId());
+    CallFrame *newFrame = new CallFrame(vFun, frame);
+    frame->pushConstant(new Value(vFun));
+    // frame->pushCode(OP_SET);
+    // fun = vFun;
+    frame = newFrame;
+    node->getBlock()->accept(this);
+    // if (!dynamic_cast<BlockStmt*>(node->getBlock())->getReturnStmtStatus()) {
+    //     frame->pushCode(OP_RETURN);
+    // }
+    // fun = vFun->getParent();
+    frame = newFrame->prev;
+    frame->insert(node->getId()->getName(), nullptr);
+
+    // frame->pushCode(OP_METHOD);
 }
 
 void CodeGen::visitProperty(const Property *node) {
     node->getKey()->accept(this);
+    if (node->getValue()->getType() == ASTType::AST_EXPR_FUN) {
+        FunctionExpr* fun = dynamic_cast<FunctionExpr*>(node->getValue());
+        fun->setId(dynamic_cast<Identifier*>(node->getKey()));
+    }
     node->getValue()->accept(this);
-    frame->fun->getChunk()->pushCode(OP_SET_OBJ_LITERAL_PROPS);
+    frame->pushCode(OP_SET_OBJ_LITERAL_PROPS);
 }
 
 void CodeGen::visitObjectExpr(const ObjectExpr* node) {

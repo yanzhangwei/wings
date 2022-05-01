@@ -105,7 +105,8 @@ private:
 
 class MemberExpr: public Expr {
 public:
-    MemberExpr(): object(nullptr), property(nullptr), isLeftHand(false) {}
+    MemberExpr(): object(nullptr), property(nullptr), 
+                  isLeftHand(false), isFun(false) {}
     // ~MemberExpr() {
     //     delete object;
     //     delete property;
@@ -116,6 +117,8 @@ public:
     bool getIsLeftHand() const { return isLeftHand; }
     Expr* getObject() const { return object; }
     Expr* getProperty() const { return property; }
+    void setIsFun() { isFun = true; }
+    bool getIsFun() const { return isFun; }
     virtual ASTType getType() const { 
         return ASTType::AST_EXPR_MEMBER; 
     }
@@ -124,6 +127,7 @@ private:
     Expr* object;
     Expr* property;
     bool isLeftHand;
+    bool isFun;
 };
 
 class ConditionExpr {

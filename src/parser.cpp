@@ -301,15 +301,6 @@ Expr* Parser::parseMemberExpression() {
         ne->setArguments(parseArguments());
         return ne;
     }
-    // if (newOrFun) {
-    //     if (newOrFun->getType() == ASTType::AST_EXPR_NEW) {
-    //         dynamic_cast<NewExpr*>(newOrFun)->setCallee(once ? e : res);
-    //         dynamic_cast<NewExpr*>(newOrFun)->setArguments(parseArguments());
-    //         return newOrFun;
-    //     } else {
-    //         dynamic_cast<FunctionExpr*>(newOrFun)
-    //     }
-    // }
     return once ? e : res;
 }
 
@@ -376,6 +367,9 @@ ExprPtrVec Parser::parseArgumentList() {
 Expr* Parser::parseLeftHandSideExpression() {
     Expr* e = parseNewExpression();
     if (match(TokenType::TOKEN_LEFT_PAREN, false)) {
+        if (dynamic_cast<MemberExpr*>(e)) {
+            dynamic_cast<MemberExpr*>(e)->setIsFun();
+        }
         return parseCallExpression(e);
     } 
     return e;

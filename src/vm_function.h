@@ -15,11 +15,12 @@ struct CallFrame;
 class VMFunction {
 public:
     VMFunction(const std::vector<Identifier*>& p, Identifier* i, VMFunction* e = nullptr)
-        : params(p), chunk(new Chunk), name(i)/*, parent(e)*/, instance(new VMInstance()), frame(nullptr) {}
+        : params(p), chunk(new Chunk), name(i)/*, parent(e)*/, instance(new VMInstance()), 
+        frame(nullptr), caller("") {}
     VMFunction(): 
         chunk(new Chunk), 
         name(new Identifier("")),
-        /*parent(nullptr),*/ instance(new VMInstance()), frame(nullptr) {}
+        /*parent(nullptr),*/ instance(new VMInstance()), frame(nullptr), caller("") {}
     Chunk* getChunk() const { return chunk; }
     Identifier* getName() const { return name; }
     // VMFunction* getParent() const { return parent; }
@@ -43,6 +44,8 @@ public:
     void setFrame(CallFrame* f) { frame = f; }
     CallFrame* getFrame() const { return frame; }
     VMInstance* getInstance() const { return instance; }
+    void setCaller(const std::string& v) { caller = v; }
+    std::string getCaller() const { return caller; }
 private:
     std::vector<Identifier*> params;
     Chunk* chunk;
@@ -52,6 +55,7 @@ private:
     VMInstance* instance;
     // VMClass* klass;
     CallFrame* frame;
+    std::string caller;
 };
 
 struct CallFrame {
@@ -73,6 +77,12 @@ struct CallFrame {
             tmp = tmp->prev;
         }
         return nullptr;
+    }
+    void pushCode(int byte) {
+        fun->getChunk()->pushCode(byte);
+    }
+    void pushConstant(Value* l) {
+        fun->getChunk()->pushConstant(l);
     }
 // private:
     VMFunction* fun;
